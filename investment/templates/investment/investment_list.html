@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Investment Portfolio</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    {% load static %}
+    <style>
+        body {
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #333;
+            display: block;
+        }
+        .sidebar a:hover {
+            background-color: #ddd;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .navbar-brand img {
+            height: 30px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="#home">Home</a>
+        <a href="#customers">Customers</a>
+        <a href="#products">Products</a>
+        <a href="#investments">Investments</a>
+        <a href="{% url 'logout' %}" class="logout">Logout</a>
+    </div>
+
+    <div class="content">
+
+        <h1>Investment Portfolio</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Investment Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for investment in investments %}
+                <tr data-id="{{ investment.id }}">
+                    <td>{{ investment.customer.customer_name }}</td>
+                    <td>{{ investment.product.product_name }}</td>
+                    <td>
+                        <span class="investment-amount">{{ investment.investment_amount }}</span>
+                        <input type="text" class="edit-amount form-control" style="display:none;" value="{{ investment.investment_amount }}">
+                    </td>
+                    <td>
+                        <button class="edit btn btn-primary">Edit</button>
+                        <button class="save btn btn-success" style="display:none;">Save</button>
+                        <button class="cancel btn btn-secondary" style="display:none;">Cancel</button>
+                        <a class="btn btn-danger" href="{% url 'investment_delete' investment.id %}">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a class="btn btn-primary" href="{% url 'investment_create' %}">Add New Investment</a>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('.edit').click(function() {
+                var row = $(this).closest('tr');
+                var amountSpan = row.find('.investment-amount');
+                var amountInput = row.find('.edit-amount');
+                var editButton = row.find('.edit');
+                var saveButton = row.find('.save');
+                var cancelButton = row.find('.cancel');
+
+                amountSpan.hide();
+                amountInput.show();
+                editButton.hide();
+                saveButton.show();
+                cancelButton.show();
+
+                cancelButton.click(function() {
+                    amountInput.hide();
+                    amountSpan.show();
+                    saveButton.hide();
+                    cancelButton.hide();
+                    editButton.show();
+                });
+
+                saveButton.click(function() {
+                    var newAmount = amountInput.val();
+                    var id = row.data('id');
+
+                    $.ajax({
+                        url: '/investments/update/' + id + '/',
+                        type: 'POST',
+                        data: {
+                            investment_amount: newAmount,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                amountSpan.text(newAmount);
+                                amountSpan.show();
+                                amountInput.hide();
+                                saveButton.hide();
+                                cancelButton.hide();
+                                editButton.show();
+                            } else {
+                                alert('Update failed');
+                            }
+                        },
+                        error: function() {
+                            alert('Error updating amount');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
